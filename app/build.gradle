@@ -1,0 +1,178 @@
+apply plugin: 'com.android.application'
+
+import org.apache.tools.ant.taskdefs.condition.Os
+import org.ho.yaml.Yaml
+
+def nameMapping = Yaml.loadType(file('../flavor-output.yml'), LinkedHashMap.class)
+
+android {
+    def keystoreProperties = new Properties()
+    keystoreProperties.load(file("../keystore.properties").newInputStream())
+
+    compileSdkVersion 25
+    buildToolsVersion '27.0.3'
+
+    defaultConfig {
+        applicationId "me.weiteng.decoration"
+        minSdkVersion 19
+        targetSdkVersion 25
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+
+    flavorDimensions('learn')
+
+    signingConfigs {
+
+        release {
+            storeFile file(keystoreProperties['storeFile'])
+            storePassword keystoreProperties['storePassword']
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+        }
+
+        debug {
+            storeFile file(keystoreProperties['debug_storeFile'])
+            storePassword keystoreProperties['debug_storePassword']
+            keyAlias keystoreProperties['debug_keyAlias']
+            keyPassword keystoreProperties['debug_keyPassword']
+        }
+    }
+
+    buildTypes {
+
+        release {
+            minifyEnabled true
+            shrinkResources true
+            zipAlignEnabled true
+            debuggable false
+            signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+
+        debug {
+            debuggable true
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    applicationVariants.all { variant ->
+
+        variant.outputs.matching {
+            return it.name.matches("\\w+-release")
+        }
+        .all { output ->
+
+            def flavorName = variant.productFlavors[0].name
+            def result = nameMapping.find {
+                it.key == flavorName
+            }
+            if (result != null) {
+                def fileName = "${result.value}-v${variant.versionName}-${variant.versionCode}.apk"
+                outputFileName = fileName
+            }
+        }
+    }
+
+    productFlavors {
+
+        xiaomi {
+            versionCode 26
+            versionName '1.1.1'
+            dimension 'learn'
+        }
+
+        baidu {
+            versionCode 26
+            versionName '1.1.0'
+            dimension 'learn'
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'com.android.support.constraint:constraint-layout:1.0.2'
+    androidTestImplementation('com.android.support.test.espresso:espresso-core:2.2.2', {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+    implementation 'com.android.support:appcompat-v7:25.4.0'
+    implementation 'com.android.support:recyclerview-v7:25.4.0'
+    compileOnly 'org.projectlombok:lombok:1.16.18'
+    testImplementation 'junit:junit:4.12'
+
+    annotationProcessor "org.projectlombok:lombok:1.16.18"
+}
+
+this.afterEvaluate {
+
+    // 查找所有变体release任务
+    def variantTasks = tasks.findAll { task ->
+        task.name.matches('assemble\\w+Release')
+    }
+
+    // 给单个变体release任务追加加固任务
+    variantTasks.each { variantTask ->
+        def subDirName = variantTask.name.replaceAll("assemble(\\w+)Release", '$1').toLowerCase()
+        variantTask.doLast {
+            def dir = rootProject.ext.apkDir + File.separator + subDirName + File.separator + 'release'
+            executeJavaCommand(dir)
+        }
+    }
+}
+
+/**
+ * 使用加固命令行工具加固
+ *
+ * @param subDir 变体对应的子目录
+ */
+def executeJavaCommand(rootDir) {
+    if (rootDir == null) {
+        rootDir = rootProject.ext.apkDir
+    }
+
+    exec {
+        if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+            commandLine 'cmd', '/c', "jiagu.bat",
+                    rootDir,
+                    rootProject.ext.outApkPath,
+                    rootProject.ext.username,
+                    rootProject.ext.password,
+                    rootProject.ext.signPath,
+                    rootProject.ext.storePassword,
+                    rootProject.ext.keyAlias,
+                    rootProject.ext.keyPassword
+        } else {
+            commandLine 'sh', './jiagu.sh',
+                    rootDir,
+                    rootProject.ext.outApkPath,
+                    rootProject.ext.username,
+                    rootProject.ext.password,
+                    rootProject.ext.signPath,
+                    rootProject.ext.storePassword,
+                    rootProject.ext.keyAlias,
+                    rootProject.ext.keyPassword
+
+        }
+    }
+
+    optimizeApkFile()
+}
+
+/**
+ * 删除临时文件并对加固后的文件名称重命名
+ */
+def optimizeApkFile() {
+    def dir = file(rootProject.ext.outApkPath)
+    dir.eachFile { file ->
+        def fileName = file.name
+        if (fileName.endsWith('_jiagu_temp.apk')) {
+            file.delete()
+        } else {
+            def newPath = file.getPath().replaceAll('_\\d+_jiagu_sign', '')
+            def newFile = new File(newPath)
+            file.renameTo(newFile)
+        }
+    }
+}
