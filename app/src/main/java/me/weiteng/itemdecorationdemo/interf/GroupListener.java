@@ -1,7 +1,7 @@
 package me.weiteng.itemdecorationdemo.interf;
 
 /**
- * Created by BTL02 on 2018/3/1.
+ * Created by weiTeng on 2018/3/1.
  */
 public interface GroupListener {
 

@@ -1,3 +1,15 @@
+## 功能1：
+
+ 使用RecyclerView的ItemDecoration实现吸顶效果
+
+ [实现过程](http://weiteng.me/article/11) 
+   
+## 功能2：
+   
+ 使用Gradle基本调用及系统脚本实现360自动化加固
+   
+ [实现过程](http://weiteng.me/article/14)  
+
 ### 扩展属性说明
 
 1. `apkDir`: 编译后生成apk的目录

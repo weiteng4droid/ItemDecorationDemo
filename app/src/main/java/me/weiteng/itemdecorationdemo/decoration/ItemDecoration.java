@@ -15,11 +15,9 @@ import me.weiteng.itemdecorationdemo.R;
 /**
  * 首页 Item 装饰器
  *
- * @author weiTeng on 2017/11/27
+ * @author weiTeng on 2018/03/01
  */
 public class ItemDecoration extends RecyclerView.ItemDecoration {
-
-    private static final String TAG = "HeadItemDecoration";
 
     private int mLineHeight;
     private int mGroupHeight;
