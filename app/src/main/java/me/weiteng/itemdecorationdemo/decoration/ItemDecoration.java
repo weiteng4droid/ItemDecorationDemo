@@ -109,9 +109,8 @@ public class ItemDecoration extends RecyclerView.ItemDecoration {
         super.onDrawOver(c, parent, state);
 
         View childView = parent.getChildAt(0);
-        int position = parent.getChildAdapterPosition(childView);
         int width = childView.getWidth();
-        int left = childView.getLeft();
+        int position = parent.getChildAdapterPosition(childView);
         String groupName = getGroupName(position);
 
         if (groupName == null) {
@@ -121,27 +120,27 @@ public class ItemDecoration extends RecyclerView.ItemDecoration {
         if (childView.getBottom() <= mGroupHeight && isDisplayGroup(position + 1)) {
             // 缩小替换效果
             c.drawRect(0, 0, width, childView.getBottom() , mGroutPaint);
-            Paint.FontMetrics fm = mTextPaint.getFontMetrics();
-            float baseLine = childView.getBottom() - (fm.bottom - fm.top) / 2;
-            c.drawText(groupName, left + mLeftMargin, baseLine, mTextPaint);
+            drawText(c, groupName, childView, childView.getBottom());
         } else {
             // 固定不动
             c.drawRect(0, 0, width, mGroupHeight, mGroutPaint);
-            Paint.FontMetrics fm = mTextPaint.getFontMetrics();
-            float baseLine = mGroupHeight - (fm.bottom - fm.top) / 2;
-            c.drawText(groupName, left + mLeftMargin, baseLine, mTextPaint);
+            drawText(c, groupName, childView, mGroupHeight);
         }
     }
 
-    private void drawText(Canvas c, RecyclerView parent, View child0, int floatHeight) {
-        int left = child0.getLeft();
-        int position = parent.getChildAdapterPosition(child0);
+    private void drawText(Canvas c, RecyclerView parent, View view, int floatHeight) {
+        int position = parent.getChildAdapterPosition(view);
         String name = getGroupName(position);
+
         if (!TextUtils.isEmpty(name)) {
-            // 文字竖直居中显示
-            Paint.FontMetrics fm = mTextPaint.getFontMetrics();
-            float baseLine = floatHeight - (fm.bottom - fm.top) / 2;
-            c.drawText(name, left + mLeftMargin, baseLine, mTextPaint);
+            drawText(c, name, view, floatHeight);
         }
+    }
+
+    private void drawText(Canvas c, String name, View view, int height) {
+        int left  = view.getLeft();
+        Paint.FontMetrics fm = mTextPaint.getFontMetrics();
+        float baseLine = height - (fm.bottom - fm.top) / 2;
+        c.drawText(name, left + mLeftMargin, baseLine, mTextPaint);
     }
 }
